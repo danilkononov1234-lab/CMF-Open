@@ -1,0 +1,40 @@
+name: Build CMF Open APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'web/**'
+      - '.github/workflows/android-apk.yml'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install dependencies
+        working-directory: web
+        run: npm install
+      - name: Build web assets
+        working-directory: web
+        run: npm run build
+      - name: Sync Android
+        working-directory: web
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: web/android
+        run: bash ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMF-Open-APK
+          path: web/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
